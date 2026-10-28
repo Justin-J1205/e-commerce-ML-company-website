@@ -1,242 +1,439 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
-# --- ALGORITHM IMPORTS (Running invisibly in the backend) ---
-from sklearn.linear_model import LinearRegression
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.neighbors import NearestNeighbors
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neural_network import MLPClassifier
+import time
+from models import load_and_train_models
 
 # --- PAGE CONFIGURATION ---
-# initial_sidebar_state="collapsed" hides the sidebar into a menu icon by default.
-st.set_page_config(page_title="(Name_here)", page_icon="🛍️", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(
+    page_title="Aura Retail Systems | Enterprise AI Portal",
+    page_icon="🌐",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- SESSION STATE FOR ENTRANCE SCREEN ---
-if 'entered' not in st.session_state:
-    st.session_state.entered = False
+# --- LOAD EXTERNAL CSS ---
+def load_css(file_name="style.css"):
+    try:
+        with open(file_name, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass
 
-# ==========================================
-# ENTRANCE SCREEN
-# ==========================================
-if not st.session_state.entered:
-    st.title("Welcome to (Name_here)")
-    st.subheader("Redefining the modern retail experience.")
-    st.write("""
-    (Name_here) was designed to provide a seamless, highly personalized shopping journey for every customer. 
-    From discovering the perfect product to ensuring completely secure transactions, the platform operates 
-    efficiently behind the scenes so the storefront remains flawless.
-    
-    Click below to explore the store and internal merchant tools.
-    """)
-    
-    # Spacing
-    st.write("")
-    st.write("")
-    
-    if st.button("Start Here", type="primary"):
-        st.session_state.entered = True
-        st.rerun()
+load_css("style.css")
 
-# ==========================================
-# MAIN APPLICATION (Accessed after clicking "Start Here")
-# ==========================================
+# --- SESSION STATE (Portal Authentication / Routing) ---
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+# --- DATA & MODEL INITIALIZATION ---
+@st.cache_resource(show_spinner=False)
+def init_models():
+    return load_and_train_models('Retail_sales.csv')
+
+# ==============================================================================
+# LANDING PAGE (Authentication & Company Overview)
+# ==============================================================================
+if not st.session_state.logged_in:
+    st.markdown('<div class="fade-in">', unsafe_allow_html=True)
+    
+    # Hero Title & Enterprise Header
+    st.markdown('''
+        <div class="hero-container">
+            <div class="hero-title">Aura Retail Systems</div>
+            <div class="hero-subtitle">
+                Enterprise Data Science & Machine Learning Platform.<br>
+                Transforming raw retail inventory into predictive operational intelligence.
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
+    
+    # Login & Authentication Card
+    col1, col2, col3 = st.columns([1, 1.8, 1])
+    with col2:
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">AUTHORIZED ACCESS ONLY</span>', unsafe_allow_html=True)
+        st.write("### Employee & Stakeholder Portal")
+        st.write("Authenticate to load the machine learning models and internal operational dashboards.")
+        
+        emp_id = st.text_input("Employee / Student ID", value="EMP-80429")
+        dept = st.selectbox(
+            "Access Module", 
+            ["Executive Overview", "Financial Operations", "Cataloging & Data Entry", "Marketing & E-Commerce", "Purchasing & Procurement", "Logistics & Warehousing", "Supply Chain Risk"]
+        )
+        
+        if st.button("Launch AI Operations Portal"):
+            with st.spinner("Initializing Scikit-Learn pipelines & caching models..."):
+                init_models()
+                time.sleep(1.2)
+                st.session_state.logged_in = True
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==============================================================================
+# MAIN APPLICATION (Authenticated Portal)
+# ==============================================================================
 else:
-    # --- HIDDEN MENU (SIDEBAR) ---
-    st.sidebar.title("Navigation Menu")
-    st.sidebar.write("*(Name_here) Internal & Storefront Features*")
+    df, lr_model, nb_model, vectorizer, knn_model, svm_model, dt_model, ann_model = init_models()
+
+    # --- SIDEBAR NAVIGATION ---
+    st.sidebar.markdown("## 🌐 Aura Systems")
+    st.sidebar.markdown("<small>Enterprise AI Portal | Active Session</small>", unsafe_allow_html=True)
+    st.sidebar.divider()
+    
     page = st.sidebar.radio(
-        "Select a module:",
+        "Departmental Modules",
         [
-            "🏠 Store Overview",
-            "📈 Revenue Projections",
-            "📝 Customer Feedback",
-            "🎯 Product Discovery",
-            "🛡️ Security & Checkout",
-            "🚪 Retention System",
-            "💎 VIP Loyalty Program"
+            "🏢 Executive Dashboard (Overview)",
+            "📈 Finance: Sales Forecaster (Linear Regression)",
+            "📝 Data Entry: Auto-Categorizer (Naive Bayes)",
+            "🛍️ Marketing: Recommendation Engine (KNN)",
+            "🛡️ Purchasing: Volume Classifier (SVM)",
+            "📦 Logistics: Dead-Stock Router (Decision Tree)",
+            "🚨 Supply Chain: Surge Alerts (Neural Network)"
         ]
     )
     
-    # Add a button in the menu to return to the entrance screen
-    if st.sidebar.button("Log Out / Exit"):
-        st.session_state.entered = False
+    st.sidebar.divider()
+    if st.sidebar.button("Log Out / Reset Portal"):
+        st.session_state.logged_in = False
         st.rerun()
 
-    # ==========================================
-    # PAGE 1: HOME
-    # ==========================================
-    if page == "🏠 Store Overview":
-        st.title("(Name_here) Dashboard")
-        st.write("Welcome to the daily operations overview.")
-        st.write("Use the menu in the top left corner to navigate through the storefront features and merchant tools.")
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Active Shoppers", "12,450", "+15%")
-        col2.metric("Catalog Items", "3,200", "+50")
-        col3.metric("Customer Satisfaction", "98.2%", "+2.1%")
+    # Page Container with Fade-In Animation
+    st.markdown('<div class="fade-in">', unsafe_allow_html=True)
 
-    # ==========================================
-    # PAGE 2: REVENUE PROJECTIONS
-    # ==========================================
-    elif page == "📈 Revenue Projections":
-        st.title("Financial Projections")
-        st.caption("⚙️ Core Algorithm: Linear Regression")
-        st.write("This internal tool forecasts expected weekly sales based on the allocated marketing budget.")
-        
-        # ALGORITHM: LINEAR REGRESSION
-        ad_spend = np.array([100, 200, 300, 400, 500]).reshape(-1, 1)
-        revenue = np.array([250, 450, 680, 900, 1100])
-        
-        model = LinearRegression()
-        model.fit(ad_spend, revenue)
-        
-        user_spend = st.slider("Select Planned Marketing Budget ($):", min_value=100, max_value=1000, step=50, value=600)
-        prediction = model.predict([[user_spend]])
-        
-        st.success(f"**Based on current trends, the projected revenue is ${prediction[0]:.2f}.**")
-        
-        chart_data = pd.DataFrame({'Marketing Budget': ad_spend.flatten(), 'Historical Revenue': revenue})
-        st.line_chart(chart_data.set_index('Marketing Budget'))
+    # ==========================================================================
+    # 1. EXECUTIVE DASHBOARD (Company Concept & Mission/Vision/Goals)
+    # ==========================================================================
+    if page == "🏢 Executive Dashboard (Overview)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">EXECUTIVE SUMMARY</span>', unsafe_allow_html=True)
+        st.title("Aura Retail Systems — Enterprise Overview")
+        st.write(
+            "**Aura Retail Systems** is a fictional next-generation beverage and consumer goods retail company. "
+            "We operate an extensive multi-regional warehouse network and storefront distribution model, leveraging historical "
+            "transactional data (`Retail_sales.csv`) to automate everyday decisions—from inventory stocking to pricing strategies."
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # ==========================================
-    # PAGE 3: CUSTOMER FEEDBACK
-    # ==========================================
-    elif page == "📝 Customer Feedback":
-        st.title("Automated Review Sorting")
-        st.caption("⚙️ Core Algorithm: Naive Bayes")
-        st.write("To optimize efficiency, the system automatically reads incoming customer reviews and flags them to highlight what needs immediate attention.")
+        # Mission, Vision, and Goals Cards
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>🎯 Company Mission</h3>
+                    <p>To empower modern retail operations with predictive machine learning intelligence, converting raw transactional inventory data into automated, real-time business actions.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with c2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>👁️ Company Vision</h3>
+                    <p>To redefine global retail supply chains by replacing reactive manual management with seamless, mathematically verified AI operational workflows.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with c3:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>🚀 Operational Goals</h3>
+                    <p>1. Automate SKU categorization.<br>2. Forecast retail revenue accurately.<br>3. Eliminate warehouse dead-stock.<br>4. Prevent seasonal stockouts.</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-        # ALGORITHM: NAIVE BAYES
-        reviews = ["I love this shirt", "Terrible quality broke immediately", "Amazing shoes fit perfectly", "Worst purchase ever", "Highly recommend this"]
-        labels = ["Positive", "Negative", "Positive", "Negative", "Positive"]
-        
-        vectorizer = CountVectorizer()
-        X = vectorizer.fit_transform(reviews)
-        model = MultinomialNB()
-        model.fit(X, labels)
-        
-        test_review = st.text_input("Paste a new customer review here:")
-        if test_review:
-            test_X = vectorizer.transform([test_review])
-            pred = model.predict(test_X)[0]
+        st.markdown("### 📊 Active Operational Metrics")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Items in Dataset", f"{len(df):,}")
+        m2.metric("Total Warehouse Units", f"{df['WAREHOUSE SALES'].sum():,.0f}")
+        m3.metric("Retail Sales Tracked", f"{df['RETAIL SALES'].sum():,.0f}")
+        m4.metric("Active AI Engines", "6 / 6 Models Online")
+
+        st.markdown("---")
+        st.markdown("### 📂 Sample Dataset Preview (`Retail_sales.csv`)")
+        st.write("Below is a sample of the historical inventory records used to train our backend machine learning algorithms:")
+        st.dataframe(df.head(10), use_container_width=True)
+
+    # ==========================================================================
+    # 2. LINEAR REGRESSION (Finance)
+    # ==========================================================================
+    elif page == "📈 Finance: Sales Forecaster (Linear Regression)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">FINANCE & PLANNING</span>', unsafe_allow_html=True)
+        st.title("📈 Retail Sales Forecaster")
+        st.write("Forecast projected retail sales volume based on scheduled stock transfers and warehouse inventory levels.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Technical & Business Explanation Cards
+        col_exp1, col_exp2 = st.columns(2)
+        with col_exp1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>⚙️ Algorithm Purpose & Relevance</h3>
+                    <p><b>Linear Regression</b> models continuous numerical relationships. In our business, financial analysts must know how much retail revenue a product will generate based on warehouse availability before approving distribution costs.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with col_exp2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>📊 Data Features & Goal Alignment</h3>
+                    <p><b>Input Features (X):</b> <code>RETAIL TRANSFERS</code>, <code>WAREHOUSE SALES</code><br>
+                    <b>Target Variable (y):</b> <code>RETAIL SALES</code><br>
+                    <b>Goal Contribution:</b> Eliminates budget over-allocation by accurately forecasting expected sales return.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+
+        # Interactive Form & Live Inference
+        st.markdown("### 🎛️ Interactive Forecast Simulator")
+        with st.form("lr_form"):
+            fc1, fc2 = st.columns(2)
+            transfers_input = fc1.number_input("Scheduled Retail Transfers (Units)", min_value=0, max_value=1000, value=25)
+            warehouse_input = fc2.number_input("Current Warehouse Stock (Units)", min_value=0, max_value=10000, value=250)
             
-            if pred == "Positive":
-                st.success(f"**System Flag: {pred} Feedback. (No action required)**")
+            submit_lr = st.form_submit_button("Run Linear Regression Prediction")
+            
+            if submit_lr:
+                with st.spinner("Computing linear equation..."):
+                    time.sleep(0.5)
+                    pred_sales = lr_model.predict([[transfers_input, warehouse_input]])[0]
+                    st.success(f"📈 **Projected Retail Sales:** **{max(0.0, pred_sales):.2f} units**")
+
+        # Visual Chart
+        st.markdown("### 📉 Regression Model Trend Visualization")
+        sample_chart_df = df.sample(n=100, random_state=42).sort_values(by='WAREHOUSE SALES')
+        sample_chart_df['Predicted Retail Sales'] = lr_model.predict(sample_chart_df[['RETAIL TRANSFERS', 'WAREHOUSE SALES']])
+        st.line_chart(sample_chart_df.set_index('WAREHOUSE SALES')[['RETAIL SALES', 'Predicted Retail Sales']])
+
+    # ==========================================================================
+    # 3. NAIVE BAYES (Cataloging & Data Entry)
+    # ==========================================================================
+    elif page == "📝 Data Entry: Auto-Categorizer (Naive Bayes)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">CATALOGING & DATA ENTRY</span>', unsafe_allow_html=True)
+        st.title("📝 Automated Product SKU Auto-Categorizer")
+        st.write("Automatically classify incoming inventory items into product categories using Natural Language Processing.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        col_nb1, col_nb2 = st.columns(2)
+        with col_nb1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>⚙️ Algorithm Purpose & Relevance</h3>
+                    <p><b>Naive Bayes</b> applies Bayes' Theorem with feature independence assumptions. It excels at fast text classification by calculating word probabilities across known product categories (e.g., WINE, LIQUOR, BEER).</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with col_nb2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>📊 Data Features & Goal Alignment</h3>
+                    <p><b>Input Feature (X):</b> <code>ITEM DESCRIPTION</code> (Text Count Vectorizer)<br>
+                    <b>Target Variable (y):</b> <code>ITEM TYPE</code> (Category Tag)<br>
+                    <b>Goal Contribution:</b> Saves thousands of human data-entry hours when processing newly acquired vendor inventory.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+
+        st.markdown("### 🎛️ Live Text Tagging Tool")
+        test_desc = st.text_input("Enter Vendor Product Description", value="CHARDONNAY VINTAGE RESERVA 750ML")
+        
+        if st.button("Classify Product Category"):
+            if test_desc.strip():
+                with st.spinner("Calculating word probabilities..."):
+                    time.sleep(0.4)
+                    vec_text = vectorizer.transform([test_desc.upper()])
+                    pred_cat = nb_model.predict(vec_text)[0]
+                    probs = nb_model.predict_proba(vec_text)[0]
+                    classes = nb_model.classes_
+
+                    st.success(f"🏷️ **Assigned Category:** **{pred_cat}**")
+                    
+                    # Probability Bar Chart
+                    st.markdown("#### 📊 Category Probability Distribution")
+                    prob_df = pd.DataFrame({"Category": classes, "Probability": probs}).sort_values(by="Probability", ascending=False)
+                    st.bar_chart(prob_df.set_index("Category"))
             else:
-                st.error(f"**System Flag: {pred} Feedback. (Forwarding to Customer Service)**")
+                st.warning("Please enter a valid product description.")
 
-    # ==========================================
-    # PAGE 4: PRODUCT DISCOVERY
-    # ==========================================
-    elif page == "🎯 Product Discovery":
-        st.title("Storefront: 'You Might Also Like'")
-        st.caption("⚙️ Core Algorithm: K-Nearest Neighbors (KNN)")
-        st.write("When customers browse an item, the catalog automatically recommends similar products based on price and category.")
+    # ==========================================================================
+    # 4. K-NEAREST NEIGHBORS (Marketing)
+    # ==========================================================================
+    elif page == "🛍️ Marketing: Recommendation Engine (KNN)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">MARKETING & E-COMMERCE</span>', unsafe_allow_html=True)
+        st.title("🛍️ Storefront Recommendation Engine")
+        st.write("Recommend similar items to online shoppers based on Euclidean distance in sales volume and inventory metrics.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # ALGORITHM: K-NEAREST NEIGHBORS (KNN)
-        products = pd.DataFrame({
-            'Product Name': ['Running Shoes', 'Sneakers', 'Winter Coat', 'Rain Jacket', 'Socks'],
-            'Price': [120, 110, 200, 180, 15],
-            'Category_Code': [1, 1, 2, 2, 3]
-        })
-        st.write("Current Catalog Sample:", products[['Product Name', 'Price']])
-        
-        features = products[['Price', 'Category_Code']]
-        knn = NearestNeighbors(n_neighbors=2) 
-        knn.fit(features)
-        
-        st.write("---")
-        st.write("If a shopper is currently looking at 'Running Shoes' ($120)...")
-        distances, indices = knn.kneighbors([[120, 1]])
-        
-        recommended_item = products.iloc[indices[0][1]]['Product Name'] 
-        
-        st.info(f"**The system will automatically suggest they also buy: {recommended_item}**")
+        col_knn1, col_knn2 = st.columns(2)
+        with col_knn1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>⚙️ Algorithm Purpose & Relevance</h3>
+                    <p><b>K-Nearest Neighbors (KNN)</b> measures distance between data points in multi-dimensional space. We use it on our e-commerce site to display 'Customers Also Viewed' items with matching inventory profiles.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with col_knn2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>📊 Data Features & Goal Alignment</h3>
+                    <p><b>Input Features (X):</b> <code>RETAIL SALES</code>, <code>WAREHOUSE SALES</code><br>
+                    <b>Target Output:</b> Top K Nearest Product Descriptions<br>
+                    <b>Goal Contribution:</b> Increases cross-selling revenue and customer basket size during checkout.</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-    # ==========================================
-    # PAGE 5: SECURITY & CHECKOUT
-    # ==========================================
-    elif page == "🛡️ Security & Checkout":
-        st.title("Payment Gateway Security")
-        st.caption("⚙️ Core Algorithm: Support Vector Machine (SVM)")
-        st.write("The platform is protected from chargebacks by instantly scanning every purchase for unusual behavior before authorizing the credit card.")
+        st.markdown("### 🎛️ Product Match Simulator")
+        col_k1, col_k2 = st.columns(2)
+        target_retail = col_k1.slider("Target Item Retail Sales Volume", 0, 100, 15)
+        target_warehouse = col_k2.slider("Target Item Warehouse Stock Level", 0, 500, 100)
 
-        # ALGORITHM: SUPPORT VECTOR MACHINE (SVM)
-        X_transactions = np.array([[50, 10], [120, 15], [30, 5], [2000, 8000], [1500, 9500]])
-        Y_fraud = np.array(["Approved", "Approved", "Approved", "Blocked", "Blocked"])
-        
-        svm_model = SVC(kernel='linear')
-        svm_model.fit(X_transactions, Y_fraud)
-        
-        col1, col2 = st.columns(2)
-        amt = col1.number_input("Cart Total ($)", value=100)
-        dist = col2.number_input("Distance from Shipping to Billing Address (Miles)", value=20)
-        
-        if st.button("Process Payment"):
-            result = svm_model.predict([[amt, dist]])[0]
-            if result == "Blocked":
-                st.error("**Transaction Blocked: Suspicious activity detected.**")
-            else:
-                st.success("**Transaction Approved: Payment successful.**")
+        if st.button("Find Nearest Products (K=3 Recommendations)"):
+            with st.spinner("Calculating Euclidean distances..."):
+                time.sleep(0.5)
+                distances, indices = knn_model.kneighbors([[target_retail, target_warehouse]])
+                
+                st.markdown("#### 🛒 Recommended Products for Website Display:")
+                rec_list = []
+                for idx in indices[0][1:]: # Skip index 0 as it is self
+                    item = df.iloc[idx]
+                    rec_list.append({
+                        "Product Name": item['ITEM DESCRIPTION'],
+                        "Category": item['ITEM TYPE'],
+                        "Retail Sales": item['RETAIL SALES'],
+                        "Warehouse Stock": item['WAREHOUSE SALES']
+                    })
+                st.table(pd.DataFrame(rec_list))
 
-    # ==========================================
-    # PAGE 6: RETENTION SYSTEM
-    # ==========================================
-    elif page == "🚪 Retention System":
-        st.title("Shopper Retention")
-        st.caption("⚙️ Core Algorithm: Decision Tree")
-        st.write("Customer login frequency and abandoned cart items are tracked to predict and prevent user churn.")
+    # ==========================================================================
+    # 5. SUPPORT VECTOR MACHINE (Purchasing)
+    # ==========================================================================
+    elif page == "🛡️ Purchasing: Volume Classifier (SVM)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">PURCHASING & PROCUREMENT</span>', unsafe_allow_html=True)
+        st.title("🛡️ Supplier Volume & Tier Classifier")
+        st.write("Audit inventory items and classify them as High-Volume vs Standard-Volume to optimize supplier contract negotiations.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # ALGORITHM: DECISION TREE
-        X_churn = np.array([[2, 0], [5, 1], [30, 4], [45, 5], [1, 0]])
-        Y_churn = np.array(["Active", "Active", "At Risk", "At Risk", "Active"])
-        
-        tree_model = DecisionTreeClassifier()
-        tree_model.fit(X_churn, Y_churn)
-        
-        days = st.slider("Days since shopper last logged in:", 0, 60, 35)
-        cart = st.slider("Items abandoned in shopping cart:", 0, 10, 4)
-        
-        prediction = tree_model.predict([[days, cart]])[0]
-        
-        if prediction == "At Risk":
-            st.warning("**Account Status: At Risk. The system is automatically emailing a 20% discount code to encourage a return.**")
-        else:
-            st.success("**Account Status: Active & Healthy.**")
+        col_svm1, col_svm2 = st.columns(2)
+        with col_svm1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>⚙️ Algorithm Purpose & Relevance</h3>
+                    <p><b>Support Vector Machine (SVM)</b> constructs an optimal hyperplane to separate classes with maximum margin. In procurement, it draws a strict mathematical boundary between standard products and high-margin inventory drivers.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with col_svm2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>📊 Data Features & Goal Alignment</h3>
+                    <p><b>Input Features (X):</b> <code>WAREHOUSE SALES</code>, <code>RETAIL TRANSFERS</code><br>
+                    <b>Target Variable (y):</b> High Volume Item vs Standard Volume Item<br>
+                    <b>Goal Contribution:</b> Enables procurement teams to target high-mover SKUs for volume discounts.</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-    # ==========================================
-    # PAGE 7: VIP LOYALTY PROGRAM
-    # ==========================================
-    elif page == "💎 VIP Loyalty Program":
-        st.title("Loyalty Tier Upgrades")
-        st.caption("⚙️ Core Algorithm: Artificial Neural Network (ANN)")
-        st.write("The platform evaluates subtle engagement patterns from new users to automatically upgrade highly engaged shoppers to VIP status for free shipping.")
+        st.markdown("### 🎛️ Procurement Tier Audit Form")
+        with st.form("svm_form"):
+            s_col1, s_col2 = st.columns(2)
+            w_vol = s_col1.number_input("Warehouse Sales Volume", min_value=0, max_value=5000, value=650)
+            t_vol = s_col2.number_input("Scheduled Transfer Units", min_value=0, max_value=500, value=40)
+            
+            submit_svm = st.form_submit_button("Run SVM Classification Audit")
+            
+            if submit_svm:
+                with st.spinner("Processing SVM decision boundary..."):
+                    time.sleep(0.6)
+                    res_svm = svm_model.predict([[w_vol, t_vol]])[0]
+                    if res_svm == "High Volume Item":
+                        st.success(f"💎 **Audit Result:** **{res_svm}** — *Action: Schedule contract renegotiation for bulk rebate.*")
+                    else:
+                        st.info(f"📦 **Audit Result:** **{res_svm}** — *Action: Apply standard vendor pricing terms.*")
 
-        # ALGORITHM: ARTIFICIAL NEURAL NETWORK (ANN)
-        X_behavior = np.array([
-            [10, 5, 2, 0],   
-            [500, 50, 45, 5], 
-            [20, 10, 5, 1],  
-            [800, 120, 60, 8] 
-        ])
-        Y_vip = np.array(["Standard", "VIP Status", "Standard", "VIP Status"])
-        
-        ann_model = MLPClassifier(hidden_layer_sizes=(8, 8), max_iter=500, random_state=42)
-        ann_model.fit(X_behavior, Y_vip)
-        
-        st.write("Evaluating a new user's daily metrics...")
-        st.write("- **Total Spend:** $100")
-        st.write("- **Pages Viewed:** 30")
-        st.write("- **Minutes on Site:** 20")
-        st.write("- **Emails Opened:** 2")
-        
-        vip_pred = ann_model.predict([[100, 30, 20, 2]])[0]
-        
-        if vip_pred == "VIP Status":
-            st.success(f"**Evaluation Complete: Account upgraded to {vip_pred}.**")
-        else:
-            st.info(f"**Evaluation Complete: Account remains {vip_pred}.**")
+    # ==========================================================================
+    # 6. DECISION TREE (Logistics)
+    # ==========================================================================
+    elif page == "📦 Logistics: Dead-Stock Router (Decision Tree)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">LOGISTICS & WAREHOUSING</span>', unsafe_allow_html=True)
+        st.title("📦 Dead-Stock Predictor & Inventory Router")
+        st.write("Predict whether an inventory item risks becoming stagnant dead-stock, guiding warehouse logistics directives.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        col_dt1, col_dt2 = st.columns(2)
+        with col_dt1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>⚙️ Algorithm Purpose & Relevance</h3>
+                    <p><b>Decision Trees</b> split data using flowchart-like binary rules based on feature thresholds. Logistics managers can inspect the clear rule tree to understand exactly why an item is flagged for warehouse retention.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with col_dt2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>📊 Data Features & Goal Alignment</h3>
+                    <p><b>Input Features (X):</b> <code>MONTH</code>, <code>WAREHOUSE SALES</code><br>
+                    <b>Target Variable (y):</b> Active Stock vs Dead Stock<br>
+                    <b>Goal Contribution:</b> Maximizes retail floor space efficiency by holding low-velocity items in secondary storage.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+
+        st.markdown("### 🎛️ Logistics Routing Simulator")
+        col_d1, col_d2 = st.columns(2)
+        op_month = col_d1.selectbox("Operating Month", list(range(1, 13)), index=7)
+        wh_stock = col_d2.slider("Current Warehouse Stock", 0, 1000, 30)
+
+        if st.button("Generate Routing Directive"):
+            with st.spinner("Evaluating decision tree nodes..."):
+                time.sleep(0.4)
+                dt_res = dt_model.predict([[op_month, wh_stock]])[0]
+                if "Dead Stock" in dt_res:
+                    st.error(f"🚫 **Logistics Directive:** **{dt_res}**")
+                else:
+                    st.success(f"✅ **Logistics Directive:** **{dt_res}**")
+
+    # ==========================================================================
+    # 7. ARTIFICIAL NEURAL NETWORK (Supply Chain)
+    # ==========================================================================
+    elif page == "🚨 Supply Chain: Surge Alerts (Neural Network)":
+        st.markdown('<div class="info-card">', unsafe_allow_html=True)
+        st.markdown('<span class="dept-badge">SUPPLY CHAIN RISK</span>', unsafe_allow_html=True)
+        st.title("🚨 Seasonal Demand Surge Predictor")
+        st.write("Detect non-linear seasonal demand spikes using a Multi-Layer Perceptron (MLP) Neural Network.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        col_ann1, col_ann2 = st.columns(2)
+        with col_ann1:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>⚙️ Algorithm Purpose & Relevance</h3>
+                    <p><b>Artificial Neural Networks (ANN)</b> learn non-linear patterns across interconnected hidden node layers. They capture complex interactions between month seasonality, warehouse levels, and stock transfers that traditional linear models miss.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+        with col_ann2:
+            st.markdown('''
+                <div class="info-card">
+                    <h3>📊 Data Features & Goal Alignment</h3>
+                    <p><b>Input Features (X):</b> <code>MONTH</code>, <code>WAREHOUSE SALES</code>, <code>RETAIL TRANSFERS</code><br>
+                    <b>Target Variable (y):</b> Demand Surge Predicted vs Normal Demand<br>
+                    <b>Goal Contribution:</b> Completely prevents stockouts during major holiday rushes and unexpected demand spikes.</p>
+                </div>
+            ''', unsafe_allow_html=True)
+
+        st.markdown("### 🎛️ Demand Surge Radar")
+        with st.form("ann_form"):
+            a_c1, a_c2, a_c3 = st.columns(3)
+            tar_month = a_c1.number_input("Target Month (1-12)", 1, 12, 11)
+            tar_ware = a_c2.number_input("Warehouse Stock", 0, 5000, 1500)
+            tar_trans = a_c3.number_input("Scheduled Transfers", 0, 1000, 45)
+            
+            submit_ann = st.form_submit_button("Run Neural Network Scan")
+            
+            if submit_ann:
+                with st.spinner("Propagating signals through hidden layers..."):
+                    time.sleep(0.8)
+                    ann_res = ann_model.predict([[tar_month, tar_ware, tar_trans]])[0]
+                    if "Surge" in ann_res:
+                        st.error(f"⚠️ **CRITICAL ALERT:** **{ann_res}** — *Action: Issue emergency re-order to supplier immediately.*")
+                    else:
+                        st.success(f"✅ **System Status:** **{ann_res}** — *Action: Inventory levels are sufficient.*")
+
+    st.markdown('</div>', unsafe_allow_html=True)

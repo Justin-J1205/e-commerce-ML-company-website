@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+/* Global Reset & Typography */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+.stApp {
+    background-color: #f8fafc;
+}
+
+/* Hide Default Streamlit Elements */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Hero Section (Landing Page) */
+.hero-container {
+    text-align: center;
+    padding: 70px 30px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+    margin-bottom: 35px;
+}
+
+.hero-title {
+    font-size: 3.2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 15px;
+    background: linear-gradient(90deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: #94a3b8;
+    max-width: 680px;
+    margin: 0 auto 25px auto;
+    line-height: 1.6;
+}
+
+/* Cards & Modules */
+.info-card {
+    background-color: #ffffff;
+    padding: 26px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    border-top: 5px solid #3b82f6;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+}
+
+.info-card h3 {
+    margin-top: 0;
+    color: #0f172a;
+    font-size: 1.35rem;
+    font-weight: 600;
+}
+
+.info-card p {
+    color: #475569;
+    font-size: 0.96rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+/* Department Badge */
+.dept-badge {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-bottom: 12px;
+}
+
+/* Metric Display Overrides */
+[data-testid="stMetricValue"] {
+    font-size: 2.1rem !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border: none;
+    padding: 11px 26px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    width: 100%;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+    color: #ffffff;
+}
+
+.stButton > button:active {
+    transform: translateY(0);
+}
+
+/* Alert Boxes Custom Styling */
+.stAlert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.03);
+}
